@@ -31,3 +31,5 @@ def C_PhiCalulator(csv):
     plt.ylabel('Shear Stress')
     plt.title('Shear Stress vs. Normal Stress')
     plt.show()
+
+    return c, phi
