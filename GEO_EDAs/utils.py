@@ -24,7 +24,7 @@ def C_PhiCalulator(csv):
     print(f"Cohesion (c): {np.round(c,3)}")
     print(f"Friction angle (φ): {np.round(np.degrees(phi),3)}")
 
-    # Plot the data and the regression line
+    #Plot the data and the regression line
     plt.scatter(normal_stress, shear_resistance, color='blue')
     plt.plot(normal_stress, reg.predict(normal_stress), color='red')
     plt.xlabel('Normal Stress')
