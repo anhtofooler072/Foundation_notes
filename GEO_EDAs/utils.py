@@ -6,6 +6,20 @@ from sklearn.linear_model import LinearRegression
 
 
 def C_PhiCalulator(csv, plot=False, message=False):
+    """
+    Calculate the cohesion (c) and friction angle (φ) from a CSV file containing shear resistance data.
+    
+    Args:
+        csv (str): Path to the CSV file containing the data. The CSV should have columns representing normal stress values and rows representing shear resistance values.
+        plot (bool, optional): If True, plots the shear stress vs. normal stress data along with the regression line. Default is False.
+        message (bool, optional): If True, prints the calculated cohesion and friction angle. Default is False.
+    
+    Returns:
+        tuple: A tuple containing:
+            - c (float): The calculated cohesion.
+            - phi (float): The calculated friction angle in radians.
+    """
+
     # Read the CSV file
     data = pd.read_csv(csv)
 
