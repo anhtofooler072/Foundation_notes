@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import os
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
 
@@ -33,3 +34,37 @@ def C_PhiCalulator(csv):
     plt.show()
 
     return c, phi
+
+def read_csv_files(folder_path):
+    """
+    Reads all .csv files in a given folder and returns a dictionary 
+    where keys are filenames and values are pandas DataFrames.
+
+    Args:
+        folder_path (str): The path to the folder containing the .csv files.
+
+    Returns:
+        dict: A dictionary of DataFrames, or None if an error occurs.
+    """
+    try:
+        dataframes = {}
+        for filename in os.listdir(folder_path):
+            if filename.endswith(".csv"):
+                file_path = os.path.join(folder_path, filename)
+                try:
+                    df = pd.read_csv(file_path)
+                    dataframes[filename] = df
+                except pd.errors.ParserError as e:
+                    print(f"Error parsing {filename}: {e}")
+                except FileNotFoundError:
+                    print(f"File not found: {file_path}")
+                except Exception as e:
+                    print(f"An unexpected error occurred while processing {filename}: {e}")
+
+        return dataframes
+    except FileNotFoundError:
+        print(f"Folder not found: {folder_path}")
+        return None
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        return None
