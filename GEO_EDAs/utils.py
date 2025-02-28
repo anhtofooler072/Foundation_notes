@@ -112,20 +112,29 @@ def DesignValuesSheetUpdate(authpath: str, clean_data, characteristic_value, rho
     )
 
     Sheet = gc.open('soil_props_pysheet')
+    
     try:
         workingSheet = Sheet.worksheet(workSheetName)
     except gs.WorksheetNotFound:
         Sheet.add_worksheet(title=workSheetName, rows=100, cols=100)
         workingSheet = Sheet.worksheet(workSheetName)
+    
     workingSheet = Sheet.worksheet(workSheetName)
      
     # Update the sheet with the clean_data dataframe
-    set_with_dataframe(workingSheet, clean_data)
+    if clean_data is not None:
+        set_with_dataframe(workingSheet, clean_data)
 
-    format_cell_range(workingSheet, 'E4:E5', ouputcell_format)
-    workingSheet.update('E4:E5', [['gamma I'], ['gamma II']]) 
-    workingSheet.update('F4:F5', [[f'{characteristic_value:.2f}(1 ± {rho_ultimate:.4f})'], [f'{characteristic_value:.2f}(1 ± {rho_serviceability:.4f})']])
-    print(f"Data updated in the worksheet: {workSheetName}")
+    if rho_serviceability is not None and rho_ultimate is not None:
+        format_cell_range(workingSheet, 'E4:E5', ouputcell_format)
+        workingSheet.update('E4:E5', [['gamma I'], ['gamma II']]) 
+        workingSheet.update('F4:F5', [[f'{characteristic_value:.2f}(1 ± {rho_ultimate:.4f})'], [f'{characteristic_value:.2f}(1 ± {rho_serviceability:.4f})']])
+        print(f"Data updated in the worksheet: {workSheetName}")
+    else:
+        workingSheet.update_cell(4, 5, 'gamma_C')
+        workingSheet.update_cell(5, 5, f'{characteristic_value:.2f}')
+        print(f"Data updated in the worksheet: {workSheetName}")
+
 
 def soil_limitstate_value(dt_count, dt_variance, characteristic_value, t_path):
     """
