@@ -3,6 +3,9 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
+import gspread as gs
+from gspread_dataframe import set_with_dataframe
+from gspread_formatting import CellFormat, Color, set_frozen, set_column_width, format_cell_range
 
 
 def C_PhiCalulator(csv, plot=False, message=False):
@@ -84,3 +87,42 @@ def read_csv_files(folder_path):
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
         return None
+    
+def DesignValuesSheetUpdate(authpath: str, clean_data, characteristic_value, rho_ultimate, rho_serviceability, workSheetName: str = None):
+    """
+    Updates a Google Sheets worksheet with design values and formatted cells.
+    Args:
+        authpath (str): Path to the Google Sheets API service account credentials file.
+        clean_data (DataFrame): DataFrame containing the clean data to be updated in the worksheet.
+        characteristic_value (float): The characteristic value to be used in the calculations.
+        rho_ultimate (float): The ultimate limit state factor.
+        rho_serviceability (float): The serviceability limit state factor.
+        workSheetName (str, optional): The name of the worksheet to update. If not provided, a new worksheet will be created.
+    Raises:
+        gs.WorksheetNotFound: If the specified worksheet is not found and cannot be created.
+    Returns:
+        None
+    """
+    
+    gc = gs.service_account(filename=authpath)
+
+    ouputcell_format = CellFormat(
+        backgroundColor=Color.fromHex('#80b781'),  # Green color
+        textFormat={'italic': True, 'fontSize': 14, 'fontFamily': 'Montserrat'}
+    )
+
+    Sheet = gc.open('soil_props_pysheet')
+    try:
+        workingSheet = Sheet.worksheet(workSheetName)
+    except gs.WorksheetNotFound:
+        Sheet.add_worksheet(title=workSheetName, rows=100, cols=100)
+        workingSheet = Sheet.worksheet(workSheetName)
+    workingSheet = Sheet.worksheet(workSheetName)
+     
+    # Update the sheet with the clean_data dataframe
+    set_with_dataframe(workingSheet, clean_data)
+
+    format_cell_range(workingSheet, 'E4:E5', ouputcell_format)
+    workingSheet.update('E4:E5', [['gamma I'], ['gamma II']]) 
+    workingSheet.update('F4:F5', [[f'{characteristic_value:.2f}(1 ± {rho_ultimate:.4f})'], [f'{characteristic_value:.2f}(1 ± {rho_serviceability:.4f})']])
+    print(f"Data updated in the worksheet: {workSheetName}")
