@@ -126,3 +126,51 @@ def DesignValuesSheetUpdate(authpath: str, clean_data, characteristic_value, rho
     workingSheet.update('E4:E5', [['gamma I'], ['gamma II']]) 
     workingSheet.update('F4:F5', [[f'{characteristic_value:.2f}(1 ± {rho_ultimate:.4f})'], [f'{characteristic_value:.2f}(1 ± {rho_serviceability:.4f})']])
     print(f"Data updated in the worksheet: {workSheetName}")
+
+def soil_limitstate_value(dt_count, dt_variance, characteristic_value, t_path):
+    """
+    This function calculates the ultimate and serviceability limit state design values for soil properties.
+
+    Parameters:
+        dt_count (int): The count of data points in the dataset.
+        dt_variance (float): The variance of the dataset.
+        characteristic_value (float): The characteristic value of the dataset.
+        t_path (str): The file path to the CSV file containing t-coefficients.
+
+    Returns:
+        tuple: A tuple containing the ultimate limit state design value (rho_ultimate) and the serviceability limit state design value (rho_serviceability).
+    """
+    
+    ## limit state design value:
+    t_coef_data = pd.read_csv(t_path)
+
+    n_index = dt_count - 1
+    
+    if n_index in t_coef_data['n'].values:
+        t_1 = t_coef_data[t_coef_data['n'] == n_index]['0.95'].values[0]
+        t_2 = t_coef_data[t_coef_data['n'] == n_index]['0.85'].values[0]
+    else:
+        closest_values = t_coef_data.iloc[(t_coef_data['n'] - n_index).abs().argsort()[:2]]
+        X = closest_values['n'].values.reshape(-1, 1)
+        
+        model_95 = LinearRegression().fit(X, closest_values['0.95'].values)
+        t_1 = model_95.predict(np.array([[n_index]]))[0]
+        
+        model_85 = LinearRegression().fit(X, closest_values['0.85'].values)
+        t_2 = model_85.predict(np.array([[n_index]]))[0]
+
+    print('Design values:')
+    print('Ultimate limit state design value t (TTGH I): ',t_1)
+    print('Serviceability limit state design value t (TTGH II): ',t_2)
+
+    rho_ultimate =  (t_1 - dt_variance) / np.sqrt(n_index)
+    rho_serviceability = (t_2 - dt_variance) / np.sqrt(n_index)
+
+    print('rho_ultimate:', rho_ultimate)
+    print('rho_serviceability:', rho_serviceability)
+    print('---------------------------------------------')
+
+    print(f'gamma_I = {characteristic_value:.2f}(1 ± {rho_ultimate:.4f})')
+    print(f'gamma_II = {characteristic_value:.2f}(1 ± {rho_serviceability:.4f})')
+
+    return rho_ultimate, rho_serviceability
