@@ -8,7 +8,7 @@ from gspread_dataframe import set_with_dataframe
 from gspread_formatting import CellFormat, Color, set_frozen, set_column_width, format_cell_range
 
 
-def C_PhiCalulator(csv, plot=False, message=False):
+def C_PhiCalulator(csv, plot=False, message=False, flatten=True):
     """
     Calculate the cohesion (c) and friction angle (φ) from a CSV file containing shear resistance data.
     
@@ -29,9 +29,14 @@ def C_PhiCalulator(csv, plot=False, message=False):
     # Display the first few rows of the dataframe to ensure it's loaded correctly
     # print(data.head())
 
-    # Flatten the data
-    normal_stress = np.repeat(data.columns.astype(float).values, data.shape[0]).reshape(-1, 1)
-    shear_resistance = np.concatenate([data[col].values for col in data.columns])
+    if flatten:
+        # Flatten the data
+        normal_stress = np.repeat(data.columns.astype(float).values, data.shape[0]).reshape(-1, 1)
+        shear_resistance = np.concatenate([data[col].values for col in data.columns])
+    else:
+        # Convert the data to a 1D array
+        normal_stress = data.iloc[:,1].astype(float).values.reshape(-1, 1)   
+        shear_resistance = data.iloc[:,0].astype(float).values
 
     # Perform linear regression
     reg = LinearRegression().fit(normal_stress, shear_resistance)
