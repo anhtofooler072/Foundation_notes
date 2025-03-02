@@ -1,11 +1,13 @@
 import pandas as pd
 import numpy as np
+import math
 import os
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
 import gspread as gs
 from gspread_dataframe import set_with_dataframe
 from gspread_formatting import CellFormat, Color, set_frozen, set_column_width, format_cell_range
+# ------------------------------------------------------------------------------------------------
 
 
 def C_PhiCalulator(csv, plot=False, message=False, flatten=True):
@@ -58,6 +60,7 @@ def C_PhiCalulator(csv, plot=False, message=False, flatten=True):
         plt.show()
 
     return c, phi
+# ------------------------------------------------------------------------------------------------
 
 def read_csv_files(folder_path):
     """
@@ -92,6 +95,7 @@ def read_csv_files(folder_path):
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
         return None
+# ------------------------------------------------------------------------------------------------
     
 def DesignValuesSheetUpdate(authpath: str, clean_data, characteristic_value, rho_ultimate, rho_serviceability, workSheetName: str = None):
     """
@@ -139,7 +143,7 @@ def DesignValuesSheetUpdate(authpath: str, clean_data, characteristic_value, rho
         workingSheet.update_cell(4, 5, 'gamma_C')
         workingSheet.update_cell(5, 5, f'{characteristic_value:.2f}')
         print(f"Data updated in the worksheet: {workSheetName}")
-
+# ------------------------------------------------------------------------------------------------
 
 def soil_limitstate_value(dt_count, dt_variance, characteristic_value, t_path):
     """
@@ -184,7 +188,72 @@ def soil_limitstate_value(dt_count, dt_variance, characteristic_value, t_path):
     print('rho_serviceability:', rho_serviceability)
     print('---------------------------------------------')
 
-    print(f'gamma_I = {characteristic_value:.2f}(1 ± {rho_ultimate:.4f})')
-    print(f'gamma_II = {characteristic_value:.2f}(1 ± {rho_serviceability:.4f})')
+    print(f'TTGH_I = {characteristic_value:.2f}(1 ± {rho_ultimate:.4f})')
+    print(f'TTGH_II = {characteristic_value:.2f}(1 ± {rho_serviceability:.4f})')
 
     return rho_ultimate, rho_serviceability
+# ------------------------------------------------------------------------------------------------
+
+def soilProps_Stat (path: str,calulation_cols: str = 'Wet_U_weight' , var_limit=0.05, Phi=False):
+    """
+    This function calculates various statistical properties of soil samples from a given CSV file path.
+    It reads the data, calculates variance, mean, and standard deviation, and filters the data based on a condition.
+    It also prints the characteristic value and other statistical properties.
+
+    Parameters:
+        path (str): The file path to the CSV file containing soil sample data.
+
+    Returns:
+        tuple: A tuple containing the cleaned data, characteristic value, ultimate limit state design value (rho_U), and serviceability limit state design value
+        (rho_S).
+    """
+    prime_dt = pd.read_csv(path)
+
+    Soil_Prop_dt = prime_dt[calulation_cols]
+    Soil_Prop_dt.index.name = None
+    Soil_Prop_dt = Soil_Prop_dt.to_frame()
+
+    Soil_Prop_count = Soil_Prop_dt[calulation_cols].count()
+    print('count:',Soil_Prop_count)
+    
+    Soil_Prop_var = Soil_Prop_dt[calulation_cols].var(ddof=1)
+    print('OK ✅' if Soil_Prop_var < var_limit else 'Failed ❌') ## todo
+    
+    Soil_Prop_mean = Soil_Prop_dt[calulation_cols].mean()
+    print('mean:',Soil_Prop_mean)
+
+    if Soil_Prop_count < 6:
+        print('the number of samples is less than 6 ⬇️')
+        characteristic_value = Soil_Prop_mean
+        print(f'characteristic value: {characteristic_value:.2f}')
+        print('---------------------------------------------')
+        return None, characteristic_value, None, None
+
+    # v' checking
+    n_v_table = pd.read_csv("./Coefficients/v_coef_sheet.csv")
+    v_max = n_v_table[n_v_table['n'] == Soil_Prop_count]['v_max'].values[0]    
+
+    if Soil_Prop_count >= 6 and Soil_Prop_var < 25:
+        Sample_pass_cond = Soil_Prop_dt[calulation_cols].std()*v_max
+    elif Soil_Prop_count >= 25:
+        Sample_pass_cond = Soil_Prop_dt[calulation_cols].std(ddof=1)*v_max  
+
+    print('[v]=', Sample_pass_cond) 
+
+
+    Soil_Prop_dt['Ad'] = (Soil_Prop_dt[calulation_cols] - Soil_Prop_mean).abs()
+
+    Soil_Prop_dt['Check'] = Soil_Prop_dt['Ad'] < Sample_pass_cond
+
+    clean_data = Soil_Prop_dt.loc[Soil_Prop_dt['Check'] == True]
+    clean_data.Name = 'Clean_data'
+    characteristic_value = clean_data[calulation_cols].mean()    
+
+
+
+    print('characteristic value:', np.round(characteristic_value, 2))
+    print('---------------------------------------------')
+
+    rho_U, rho_S = soil_limitstate_value(Soil_Prop_count, Soil_Prop_var, characteristic_value, "./Coefficients/t_coef_sheet.csv")
+
+    return clean_data, characteristic_value, rho_U, rho_S 
