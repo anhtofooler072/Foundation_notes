@@ -166,7 +166,10 @@ def soil_limitstate_value(dt_count, dt_variance, characteristic_value, t_path, C
     ## limit state design value:
     t_coef_data = pd.read_csv(t_path)
 
-    n_index = dt_count - 1
+    if C_Phi:
+        n_index = dt_count - 2
+    else:
+        n_index = dt_count - 1
     
     if n_index in t_coef_data['n'].values:
         t_1 = t_coef_data[t_coef_data['n'] == n_index]['0.95'].values[0]
@@ -220,11 +223,10 @@ def soilProps_Stat (path: str,calulation_cols: str = 'Wet_U_weight' , var_limit=
     Soil_Prop_count = Soil_Prop_dt[calulation_cols].count()
     print('count:',Soil_Prop_count)
     
-
-
     if Phi: 
         Phi_mean = Soil_Prop_dt[calulation_cols].mean()
         Phi_std = Soil_Prop_dt[calulation_cols].std()
+        Phi_std_1 = Soil_Prop_dt[calulation_cols].std(ddof=1)
         Phi_mean_tng = degree_to_tangent(Phi_mean)
         Phi_std_tng = degree_to_tangent(Phi_std)
         Soil_Prop_var = Phi_std_tng/Phi_mean_tng
@@ -233,8 +235,6 @@ def soilProps_Stat (path: str,calulation_cols: str = 'Wet_U_weight' , var_limit=
         Soil_Prop_var = Soil_Prop_dt[calulation_cols].var(ddof=1)
         print('OK ✅' if Soil_Prop_var < var_limit else 'Failed ❌') ## todo
     
-
-
 
     Soil_Prop_mean = Soil_Prop_dt[calulation_cols].mean()
     print('mean:',Soil_Prop_mean)
@@ -251,16 +251,25 @@ def soilProps_Stat (path: str,calulation_cols: str = 'Wet_U_weight' , var_limit=
     v_max = n_v_table[n_v_table['n'] == Soil_Prop_count]['v_max'].values[0]    
 
     if Soil_Prop_count >= 6 and Soil_Prop_var < 25:
-        Sample_pass_cond = Soil_Prop_dt[calulation_cols].std()*v_max
+        if Phi:
+            Sample_pass_cond = Phi_std_tng* v_max
+        else:
+            Sample_pass_cond = Soil_Prop_dt[calulation_cols].std()*v_max
     elif Soil_Prop_count >= 25:
-        Sample_pass_cond = Soil_Prop_dt[calulation_cols].std(ddof=1)*v_max  
+        if Phi:
+            Sample_pass_cond = Phi_std_1* v_max
+        else:
+            Sample_pass_cond = Soil_Prop_dt[calulation_cols].std(ddof=1)*v_max  
 
     print('[v]=', Sample_pass_cond) 
 
-
-    Soil_Prop_dt['Ad'] = (Soil_Prop_dt[calulation_cols] - Soil_Prop_mean).abs()
+    if Phi:
+        Soil_Prop_dt['Ad'] = (Soil_Prop_dt[calulation_cols].apply(degree_to_tangent) - Phi_mean_tng).abs()
+    else:
+        Soil_Prop_dt['Ad'] = (Soil_Prop_dt[calulation_cols] - Soil_Prop_mean).abs()
 
     Soil_Prop_dt['Check'] = Soil_Prop_dt['Ad'] < Sample_pass_cond
+    # print(Soil_Prop_dt)
 
     clean_data = Soil_Prop_dt.loc[Soil_Prop_dt['Check'] == True]
     clean_data.Name = 'Clean_data'
@@ -271,6 +280,6 @@ def soilProps_Stat (path: str,calulation_cols: str = 'Wet_U_weight' , var_limit=
     print('characteristic value:', np.round(characteristic_value, 2))
     print('---------------------------------------------')
 
-    rho_U, rho_S = soil_limitstate_value(Soil_Prop_count, Soil_Prop_var, characteristic_value, "./Coefficients/t_coef_sheet.csv")
+    rho_U, rho_S = soil_limitstate_value(Soil_Prop_count, Soil_Prop_var, characteristic_value, "./Coefficients/t_coef_sheet.csv", C_Phi=Phi)
 
     return clean_data, characteristic_value, rho_U, rho_S 
