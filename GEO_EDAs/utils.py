@@ -10,6 +10,10 @@ from gspread_formatting import CellFormat, Color, set_frozen, set_column_width, 
 # ------------------------------------------------------------------------------------------------
 
 
+def degree_to_tangent(degree):
+    radians = math.radians(degree)
+    return math.tan(radians)
+
 def C_PhiCalulator(csv, plot=False, message=False, flatten=True):
     """
     Calculate the cohesion (c) and friction angle (φ) from a CSV file containing shear resistance data.
@@ -145,7 +149,7 @@ def DesignValuesSheetUpdate(authpath: str, clean_data, characteristic_value, rho
         print(f"Data updated in the worksheet: {workSheetName}")
 # ------------------------------------------------------------------------------------------------
 
-def soil_limitstate_value(dt_count, dt_variance, characteristic_value, t_path):
+def soil_limitstate_value(dt_count, dt_variance, characteristic_value, t_path, C_Phi=False):
     """
     This function calculates the ultimate and serviceability limit state design values for soil properties.
 
@@ -216,9 +220,22 @@ def soilProps_Stat (path: str,calulation_cols: str = 'Wet_U_weight' , var_limit=
     Soil_Prop_count = Soil_Prop_dt[calulation_cols].count()
     print('count:',Soil_Prop_count)
     
-    Soil_Prop_var = Soil_Prop_dt[calulation_cols].var(ddof=1)
-    print('OK ✅' if Soil_Prop_var < var_limit else 'Failed ❌') ## todo
+
+
+    if Phi: 
+        Phi_mean = Soil_Prop_dt[calulation_cols].mean()
+        Phi_std = Soil_Prop_dt[calulation_cols].std()
+        Phi_mean_tng = degree_to_tangent(Phi_mean)
+        Phi_std_tng = degree_to_tangent(Phi_std)
+        Soil_Prop_var = Phi_std_tng/Phi_mean_tng
+        print('OK ✅' if Soil_Prop_var < var_limit else 'Failed ❌') ## todo
+    else:
+        Soil_Prop_var = Soil_Prop_dt[calulation_cols].var(ddof=1)
+        print('OK ✅' if Soil_Prop_var < var_limit else 'Failed ❌') ## todo
     
+
+
+
     Soil_Prop_mean = Soil_Prop_dt[calulation_cols].mean()
     print('mean:',Soil_Prop_mean)
 
