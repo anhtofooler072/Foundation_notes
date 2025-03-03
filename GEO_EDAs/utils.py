@@ -188,8 +188,8 @@ def soil_limitstate_value(dt_count, dt_variance, characteristic_value, t_path, C
     print('Ultimate limit state design value t (TTGH I): ',t_1)
     print('Serviceability limit state design value t (TTGH II): ',t_2)
 
-    rho_ultimate =  (t_1 - dt_variance) / np.sqrt(n_index)
-    rho_serviceability = (t_2 - dt_variance) / np.sqrt(n_index)
+    rho_ultimate =  (t_1 * dt_variance) / np.sqrt(n_index)
+    rho_serviceability = (t_2 * dt_variance) / np.sqrt(n_index)
 
     print('rho_ultimate:', rho_ultimate)
     print('rho_serviceability:', rho_serviceability)
@@ -232,7 +232,7 @@ def soilProps_Stat (path: str,calulation_cols: str = 'Wet_U_weight' , var_limit=
         Soil_Prop_var = Phi_std_tng/Phi_mean_tng
         print('OK ✅' if Soil_Prop_var < var_limit else 'Failed ❌') ## todo
     else:
-        Soil_Prop_var = Soil_Prop_dt[calulation_cols].var(ddof=1)
+        Soil_Prop_var = Soil_Prop_dt[calulation_cols].std(ddof=1)/Soil_Prop_dt[calulation_cols].mean()
         print('OK ✅' if Soil_Prop_var < var_limit else 'Failed ❌') ## todo
     
 
