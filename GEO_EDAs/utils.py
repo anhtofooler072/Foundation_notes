@@ -228,12 +228,17 @@ def soilProps_Stat (path: str,calulation_cols: str = 'Wet_U_weight' , var_limit=
         Phi_std = Soil_Prop_dt[calulation_cols].std()
         Phi_std_1 = Soil_Prop_dt[calulation_cols].std(ddof=1)
         Phi_mean_tng = degree_to_tangent(Phi_mean)
+        print('mean_tng:', Phi_mean_tng)
         Phi_std_tng = degree_to_tangent(Phi_std)
+        print('std_tng:', Phi_std_tng)
         Soil_Prop_var = Phi_std_tng/Phi_mean_tng
-        print('OK ✅' if Soil_Prop_var < var_limit else 'Failed ❌') ## todo
+        print('var_coeff:',Soil_Prop_var)
+        print('OK ✅' if Soil_Prop_var < var_limit else 'Failed ❌')
     else:
         Soil_Prop_var = Soil_Prop_dt[calulation_cols].std(ddof=1)/Soil_Prop_dt[calulation_cols].mean()
-        print('OK ✅' if Soil_Prop_var < var_limit else 'Failed ❌') ## todo
+        print('std:',Soil_Prop_dt[calulation_cols].std(ddof=1))
+        print('var_coeff:',Soil_Prop_var)
+        print('OK ✅' if Soil_Prop_var < var_limit else 'Failed ❌')
     
 
     Soil_Prop_mean = Soil_Prop_dt[calulation_cols].mean()
@@ -241,7 +246,10 @@ def soilProps_Stat (path: str,calulation_cols: str = 'Wet_U_weight' , var_limit=
 
     if Soil_Prop_count < 6:
         print('the number of samples is less than 6 ⬇️')
-        characteristic_value = Soil_Prop_mean
+        if Phi:
+            characteristic_value = Phi_mean_tng
+        else:
+            characteristic_value = Soil_Prop_mean
         print(f'characteristic value: {characteristic_value:.2f}')
         print('---------------------------------------------')
         return None, characteristic_value, None, None
@@ -261,7 +269,7 @@ def soilProps_Stat (path: str,calulation_cols: str = 'Wet_U_weight' , var_limit=
         else:
             Sample_pass_cond = Soil_Prop_dt[calulation_cols].std(ddof=1)*v_max  
 
-    print('[v]=', Sample_pass_cond) 
+    print('[v.σcm]=', Sample_pass_cond) 
 
     if Phi:
         Soil_Prop_dt['Ad'] = (Soil_Prop_dt[calulation_cols].apply(degree_to_tangent) - Phi_mean_tng).abs()
@@ -273,9 +281,11 @@ def soilProps_Stat (path: str,calulation_cols: str = 'Wet_U_weight' , var_limit=
 
     clean_data = Soil_Prop_dt.loc[Soil_Prop_dt['Check'] == True]
     clean_data.Name = 'Clean_data'
-    characteristic_value = clean_data[calulation_cols].mean()    
-
-
+    
+    if Phi:
+        characteristic_value = clean_data[calulation_cols].apply(degree_to_tangent).mean()
+    else:
+        characteristic_value = clean_data[calulation_cols].mean()    
 
     print('characteristic value:', np.round(characteristic_value, 2))
     print('---------------------------------------------')
