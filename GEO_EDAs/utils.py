@@ -124,7 +124,7 @@ def DesignValuesSheetUpdate(authpath: str, clean_data, characteristic_value, rho
         textFormat={'italic': True, 'fontSize': 14, 'fontFamily': 'Montserrat'}
     )
 
-    Sheet = gc.open('soil_props_pysheet')
+    Sheet = gc.open('soilprop2')
     
     try:
         workingSheet = Sheet.worksheet(workSheetName)
@@ -201,7 +201,7 @@ def soil_limitstate_value(dt_count, dt_variance, characteristic_value, t_path, C
     return rho_ultimate, rho_serviceability
 # ------------------------------------------------------------------------------------------------
 
-def soilProps_Stat (path: str,calulation_cols: str = 'Wet_U_weight' , var_limit=0.05, Phi=False):
+def soilProps_Stat (path: str,calulation_cols: str = 'Sub_U_weight' , var_limit=0.05, Phi=False):
     """
     This function calculates various statistical properties of soil samples from a given CSV file path.
     It reads the data, calculates variance, mean, and standard deviation, and filters the data based on a condition.
@@ -235,7 +235,7 @@ def soilProps_Stat (path: str,calulation_cols: str = 'Wet_U_weight' , var_limit=
         print('var_coeff:',Soil_Prop_var)
         print('OK ✅' if Soil_Prop_var < var_limit else 'Failed ❌')
     else:
-        Soil_Prop_var = Soil_Prop_dt[calulation_cols].std(ddof=1)/Soil_Prop_dt[calulation_cols].mean()
+        Soil_Prop_var = Soil_Prop_dt[calulation_cols].std(ddof=0)/Soil_Prop_dt[calulation_cols].mean()
         print('std:',Soil_Prop_dt[calulation_cols].std(ddof=1))
         print('var_coeff:',Soil_Prop_var)
         print('OK ✅' if Soil_Prop_var < var_limit else 'Failed ❌')
