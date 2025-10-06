@@ -188,8 +188,12 @@ def soil_limitstate_value(dt_count, dt_variance, characteristic_value, t_path, C
     print('Ultimate limit state design value t (TTGH I): ',t_1)
     print('Serviceability limit state design value t (TTGH II): ',t_2)
 
-    rho_ultimate =  (t_1 * dt_variance) / np.sqrt(n_index)
-    rho_serviceability = (t_2 * dt_variance) / np.sqrt(n_index)
+    if C_Phi:
+        rho_ultimate =  (t_1 * dt_variance)
+        rho_serviceability = (t_2 * dt_variance)
+    else:
+        rho_ultimate =  (t_1 * dt_variance) / np.sqrt(n_index)
+        rho_serviceability = (t_2 * dt_variance) / np.sqrt(n_index)
 
     print('rho_ultimate:', rho_ultimate)
     print('rho_serviceability:', rho_serviceability)
